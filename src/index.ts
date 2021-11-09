@@ -1,6 +1,7 @@
 import express, { Express, Request, Response } from "express";
 import helmet from "helmet";
 import dotenv from "dotenv";
+import indexRouter from "./api/routes";
 
 dotenv.config();
 
@@ -11,8 +12,6 @@ app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("<h1>Hello world</h1>");
-});
+app.use("/v1/", indexRouter);
 
 app.listen(PORT, () => console.log(`Running on ${PORT}`));
