@@ -37,7 +37,7 @@ export const authenticate = async (
       algorithms: [jwtAlgorithm],
     }) as JwtPayload;
 
-    const userId = decoded.id;
+    const userId: string = decoded.id;
     const expiration = checkExpirationStatus(decoded);
 
     if (expiration === "expired") {
@@ -50,7 +50,7 @@ export const authenticate = async (
       res.setHeader(responseHeader, token);
     }
 
-    req.user = userId;
+    req.userId = userId;
     next();
   } catch (e) {
     unauthorized(
