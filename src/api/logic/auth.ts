@@ -11,6 +11,10 @@ export const createEmailUser = async (
   password: string
 ): Promise<User> => {
   try {
+    const emailExists = await emailExisting(email);
+    if (emailExists)
+      throw new Error("An account with this email already exists");
+
     const newUser = await createUser();
     const emailUser: User = await linkUserEmailAuth(
       newUser.id,
@@ -90,6 +94,15 @@ const createUser = async (): Promise<Omit<User, "auth">> => {
   } catch (error) {
     throw new Error("Could not create user");
   }
+};
+
+const emailExisting = async (email: string): Promise<boolean> => {
+  const client = await DbClient.getInstance();
+  const db = client.db(process.env.DB_NAME);
+  const users = db.collection("users");
+
+  const emailUser = await users.findOne({ "auth.email.email": email });
+  return !!emailUser;
 };
 
 const linkUserEmailAuth = async (
