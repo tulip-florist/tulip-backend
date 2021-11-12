@@ -23,7 +23,7 @@ export interface Document {
   id: ObjectId;
   userId: ObjectId;
   documentHash: string;
-  annotations?: Array<Annotation>;
+  annotations: Array<Annotation>;
 }
 
 export interface Annotation {
@@ -36,6 +36,7 @@ export interface Annotation {
 
 export interface Session {
   accessToken: string;
+  userId: string;
 }
 
 export interface AuthRequest extends Request {

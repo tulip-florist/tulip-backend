@@ -45,6 +45,7 @@ export const signEmailUserIn = async (
   const token = signUserToken(user._id);
   const resp: Session = {
     accessToken: token,
+    userId: user._id,
   };
   return resp;
 };

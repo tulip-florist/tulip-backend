@@ -18,12 +18,11 @@ export const authenticate = async (
     });
   };
 
-  const requestHeader = "Authorization";
-  const responseHeader = "X-Renewed-JWT-Token";
-  const reqAuthHeader = req.header(requestHeader);
+  const authHeader = "Authorization";
+  const reqAuthHeader = req.header(authHeader);
 
   if (!reqAuthHeader) {
-    unauthorized(`Required ${requestHeader} header not found.`);
+    unauthorized(`Required ${authHeader} header not found.`);
     return;
   }
   if (!process.env.JWT_SECRET) {
@@ -48,7 +47,7 @@ export const authenticate = async (
 
     if (expiration === "renew") {
       const token = signUserToken(userId);
-      res.setHeader(responseHeader, token);
+      res.setHeader(authHeader, token);
     }
 
     req.userId = userId;

@@ -18,7 +18,10 @@ export const emailSignin = async (req: Request, res: Response) => {
   // TODO validation
   try {
     const session = await signEmailUserIn(req.body.email, req.body.password);
-    res.status(200).send(session);
+    res.setHeader("Authorization", session.accessToken);
+    res.status(200).send({
+      userId: session.userId,
+    });
   } catch (error) {
     console.log((error as Error).message);
     res.status(401).send({
