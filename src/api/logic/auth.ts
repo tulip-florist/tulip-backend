@@ -68,6 +68,35 @@ export const signUserToken = (userId: string): string => {
   return token;
 };
 
+export const getUserByAuthtoken = async (
+  authToken: string
+): Promise<Omit<User, "auth">> => {
+  if (!process.env.JWT_SECRET) throw new Error("Server error");
+
+  const token = authToken.split(" ")[1]; // "Bearer <token>"
+
+  const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+    algorithms: [jwtAlgorithm],
+  }) as JwtPayload;
+  const decodedUserId: string = decoded.id;
+
+  const client = await DbClient.getInstance();
+  const db = client.db(process.env.DB_NAME);
+  const users = db.collection("users");
+
+  const dbUser = await users.findOne({ _id: new ObjectId(decodedUserId) });
+  if (dbUser) {
+    // user will contain more information in the future
+    const user = {
+      id: dbUser._id,
+    };
+    return user;
+  } else {
+    // dbUser must exist since it passed the auth middleware
+    throw new Error("Invalid authorization token");
+  }
+};
+
 export const checkExpirationStatus = (token: JwtPayload) => {
   const now = Date.now();
   if (token.expires) {

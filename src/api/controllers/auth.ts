@@ -1,5 +1,10 @@
-import { createEmailUser, signEmailUserIn } from "../logic/auth";
+import {
+  createEmailUser,
+  getUserByAuthtoken,
+  signEmailUserIn,
+} from "../logic/auth";
 import { Request, Response } from "express";
+import { AuthRequest } from "../../types/types";
 
 export const emailSignup = async (req: Request, res: Response) => {
   try {
@@ -21,6 +26,25 @@ export const emailSignin = async (req: Request, res: Response) => {
     res.setHeader("Authorization", session.accessToken);
     res.status(200).send({
       userId: session.userId,
+    });
+  } catch (error) {
+    console.log((error as Error).message);
+    res.status(401).send({
+      accessToken: null,
+      message: (error as Error).message,
+    });
+  }
+};
+
+// Retrieve user information about the current user
+export const me = async (req: AuthRequest, res: Response) => {
+  try {
+    const token = req.headers.authorization;
+    if (!token) throw new Error("Authorization header missing");
+
+    const user = await getUserByAuthtoken(token);
+    res.status(200).send({
+      user,
     });
   } catch (error) {
     console.log((error as Error).message);
