@@ -18,11 +18,11 @@ export const authenticate = async (
     });
   };
 
-  const requestHeader = "X-JWT-Token";
+  const requestHeader = "Authorization";
   const responseHeader = "X-Renewed-JWT-Token";
-  const token = req.header(requestHeader);
+  const reqAuthHeader = req.header(requestHeader);
 
-  if (!token) {
+  if (!reqAuthHeader) {
     unauthorized(`Required ${requestHeader} header not found.`);
     return;
   }
@@ -33,6 +33,7 @@ export const authenticate = async (
   }
 
   try {
+    const token = reqAuthHeader.split(" ")[1]; // "Bearer <token>"
     const decoded = jwt.verify(token, process.env.JWT_SECRET, {
       algorithms: [jwtAlgorithm],
     }) as JwtPayload;
