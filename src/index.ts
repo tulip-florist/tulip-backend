@@ -6,7 +6,7 @@ import indexRouter from "./api/routes";
 
 dotenv.config();
 
-let allowedOrigins = ["https://tulip.florist"];
+let allowedOrigins = ["https://www.tulip.florist"];
 if (process.env.NODE_ENV != "production") {
   allowedOrigins = [...allowedOrigins, "http://localhost:3000"];
 }
