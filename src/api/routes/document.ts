@@ -5,7 +5,7 @@ import {
 } from "../controllers/document";
 const documentRouter = express.Router();
 
-documentRouter.get("/getByHash", getDocumentByUserIdAndHash);
-documentRouter.put("/setByHash", setDocumentByUserIdAndHash);
+documentRouter.get("/:documentHash", getDocumentByUserIdAndHash);
+documentRouter.put("/:documentHash", setDocumentByUserIdAndHash);
 
 export default documentRouter;

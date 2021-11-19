@@ -7,7 +7,7 @@ import documentRouter from "./document";
 const indexRouter = express.Router();
 
 indexRouter.use("/auth", authRouter);
-indexRouter.use("/document", authenticate, documentRouter);
+indexRouter.use("/documents", authenticate, documentRouter);
 
 // TEST ENDPOINTS:
 indexRouter.get("/", (req: Request, res: Response) => {

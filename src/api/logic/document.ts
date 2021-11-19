@@ -5,7 +5,7 @@ import { Document } from "../../types/types";
 export const getDocument = async (
   userId: string,
   documentHash: Document["documentHash"]
-): Promise<MongoDoc> => {
+): Promise<MongoDoc | null> => {
   const client = await DbClient.getInstance();
   const db = client.db(process.env.DB_NAME);
   const documents = db.collection("documents");
@@ -15,7 +15,6 @@ export const getDocument = async (
     documentHash,
   });
 
-  if (!document) throw new Error("No document found");
   return document;
 };
 
@@ -64,7 +63,7 @@ const updateAnnotations = async (
   const documents = db.collection("documents");
 
   const annotations = document.annotations ? document.annotations : [];
-  const result = await documents.updateOne(
+  const result = await documents.findOneAndUpdate(
     {
       userId: new ObjectId(userId),
       documentHash: document.documentHash,
@@ -75,11 +74,8 @@ const updateAnnotations = async (
       },
     }
   );
-
-  if (result.matchedCount !== 1)
-    throw new Error("Couldn't find document to update");
-
-  const updatedDocument = await getDocument(userId, document.documentHash);
+  const updatedDocument = result.value;
+  if (!updatedDocument) throw new Error("Couldn't find document to update");
   return updatedDocument;
 };
 

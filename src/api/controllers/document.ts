@@ -8,15 +8,17 @@ export const getDocumentByUserIdAndHash = async (
 ) => {
   try {
     const userId = req.userId;
-    const documentHash = req.query.documentHash as string;
-    if (!userId || !documentHash) throw new Error("Invalid arguments");
+    const documentHash = req.params.documentHash as string;
+    if (!userId || !documentHash)
+      return res.status(400).send({ error: "Missing parameter: documentHash" });
 
     const document = await getDocument(userId, documentHash);
-    res.status(200).send(document);
+    const status = document ? 200 : 404;
+    res.status(status).send(document);
   } catch (error) {
     console.log((error as Error).message);
     res.status(500).send({
-      message: (error as Error).message,
+      error: (error as Error).message,
     });
   }
 };
@@ -27,15 +29,19 @@ export const setDocumentByUserIdAndHash = async (
 ) => {
   try {
     const userId = req.userId;
+    const documentHash = req.params.documentHash;
     const document = req.body.document as Omit<Document, "id" | "userId">;
-    if (!userId || !document) throw new Error("Invalid arguments");
+    if (!userId || !document)
+      return res.status(400).send({ error: "Document missing" });
+    if (documentHash !== document.documentHash)
+      return res.status(400).send({ error: "Document hashes not matching" });
 
     const updatedDocument = await setOrCreateDocument(userId, document);
     res.status(200).send(updatedDocument);
   } catch (error) {
     console.log((error as Error).message);
     res.status(500).send({
-      message: (error as Error).message,
+      error: (error as Error).message,
     });
   }
 };
