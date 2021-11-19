@@ -9,8 +9,12 @@ import { AuthRequest } from "../../types/types";
 export const emailSignup = async (req: Request, res: Response) => {
   try {
     // TODO validation
-    await createEmailUser(req.body.email, req.body.password);
-    res.sendStatus(201);
+    const user = await createEmailUser(req.body.email, req.body.password);
+    if (user) {
+      res.sendStatus(201);
+    } else {
+      res.status(409).send({ error: "Email already registered" });
+    }
   } catch (error) {
     console.log((error as Error).message);
     res.status(500).send({

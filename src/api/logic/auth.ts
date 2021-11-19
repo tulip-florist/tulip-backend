@@ -9,11 +9,10 @@ export const jwtAlgorithm: jwt.Algorithm = "HS512";
 export const createEmailUser = async (
   email: string,
   password: string
-): Promise<User> => {
+): Promise<User | null> => {
   try {
     const emailExists = await emailExisting(email);
-    if (emailExists)
-      throw new Error("An account with this email already exists");
+    if (emailExists) return null;
 
     const newUser = await createUser();
     const emailUser: User = await linkUserEmailAuth(
