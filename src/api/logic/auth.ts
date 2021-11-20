@@ -88,6 +88,7 @@ export const getUserByAuthtoken = async (
     // user will contain more information in the future
     const user = {
       id: dbUser._id,
+      email: dbUser.auth.email.email,
     };
     return user;
   } else {
