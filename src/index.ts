@@ -1,4 +1,5 @@
 import express, { Express, Request, Response } from "express";
+import morgan from "morgan";
 import helmet from "helmet";
 import dotenv from "dotenv";
 import indexRouter from "./api/routes";
@@ -12,6 +13,7 @@ const app: Express = express();
 app.use(helmet());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(morgan("dev"));
 
 app.use(corsMiddleware);
 app.use("/v1/", indexRouter);
