@@ -7,6 +7,9 @@ dist
 # environment
 .env
 
+# logging
+logs
+
 # misc
 .DS_Store
 .env.local
