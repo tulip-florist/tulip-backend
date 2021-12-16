@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import { Session, User } from "../../types/types";
 import { ObjectId } from "mongodb";
 import jwt, { JwtPayload } from "jsonwebtoken";
+import logger from "../../util/logger";
 
 export const jwtAlgorithm: jwt.Algorithm = "HS512";
 
@@ -22,7 +23,7 @@ export const createEmailUser = async (
     );
     return emailUser;
   } catch (error) {
-    console.log((error as Error).message);
+    logger.error(error);
     throw error;
   }
 };

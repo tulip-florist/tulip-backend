@@ -5,6 +5,7 @@ import {
 } from "../logic/auth";
 import { Request, Response } from "express";
 import { AuthRequest } from "../../types/types";
+import logger from "../../util/logger";
 
 export const emailSignup = async (req: Request, res: Response) => {
   try {
@@ -16,7 +17,7 @@ export const emailSignup = async (req: Request, res: Response) => {
       res.status(409).send({ error: "Email already registered" });
     }
   } catch (error) {
-    console.log((error as Error).message);
+    logger.error(error);
     res.status(500).send({
       message: (error as Error).message,
     });
@@ -32,7 +33,7 @@ export const emailSignin = async (req: Request, res: Response) => {
       userId: session.userId,
     });
   } catch (error) {
-    console.log((error as Error).message);
+    logger.error(error);
     res.status(401).send({
       accessToken: null,
       message: (error as Error).message,
@@ -51,7 +52,7 @@ export const me = async (req: AuthRequest, res: Response) => {
       user,
     });
   } catch (error) {
-    console.log((error as Error).message);
+    logger.error(error);
     res.status(401).send({
       accessToken: null,
       message: (error as Error).message,

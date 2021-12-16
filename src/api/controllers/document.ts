@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { AuthRequest, Document } from "../../types/types";
+import logger from "../../util/logger";
 import { getDocument, setOrCreateDocument } from "../logic/document";
 
 export const getDocumentByUserIdAndHash = async (
@@ -16,7 +17,7 @@ export const getDocumentByUserIdAndHash = async (
     const status = document ? 200 : 404;
     res.status(status).send(document);
   } catch (error) {
-    console.log((error as Error).message);
+    logger.error(error);
     res.status(500).send({
       error: (error as Error).message,
     });
@@ -39,7 +40,7 @@ export const setDocumentByUserIdAndHash = async (
     const updatedDocument = await setOrCreateDocument(userId, document);
     res.status(200).send(updatedDocument);
   } catch (error) {
-    console.log((error as Error).message);
+    logger.error(error);
     res.status(500).send({
       error: (error as Error).message,
     });
