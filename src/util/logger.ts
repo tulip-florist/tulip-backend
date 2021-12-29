@@ -17,10 +17,11 @@ const options = {
   },
   sentry: {
     config: {
+      environment: process.env.NODE_ENV,
       dsn: process.env.SENTRY_DNS,
       tracesSampleRate: (() => {
         if (process.env.NODE_ENV === "production") {
-          return 0.5;
+          return 0.7;
         } else {
           return 1.0;
         }
