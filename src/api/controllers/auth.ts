@@ -3,59 +3,56 @@ import {
   getUserByAuthtoken,
   signEmailUserIn,
 } from "../logic/auth";
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { AuthRequest } from "../../types/types";
-import logger from "../../util/logger";
+import { CustomError } from "../../errors/CustomError";
 
-export const emailSignup = async (req: Request, res: Response) => {
+export const emailSignup = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  // TODO validation
   try {
-    // TODO validation
-    const user = await createEmailUser(req.body.email, req.body.password);
-    if (user) {
-      res.sendStatus(201);
-    } else {
-      res.status(409).send({ error: "Email already registered" });
-    }
+    await createEmailUser(req.body.email, req.body.password);
+    res.sendStatus(201);
   } catch (error) {
-    logger.error(error);
-    res.status(500).send({
-      message: (error as Error).message,
-    });
+    next(error);
   }
 };
 
-export const emailSignin = async (req: Request, res: Response) => {
+export const emailSignin = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   // TODO validation
   try {
     const session = await signEmailUserIn(req.body.email, req.body.password);
-    res.setHeader("Authorization", session.accessToken);
-    res.status(200).send({
-      userId: session.userId,
-    });
+    res.setHeader("Authorization", session.accessToken); // TODO refactor to use: "Bearer <token>"
+    res.sendStatus(200);
   } catch (error) {
-    logger.error(error);
-    res.status(401).send({
-      accessToken: null,
-      message: (error as Error).message,
-    });
+    next(error);
   }
 };
 
 // Retrieve user information about the current user
-export const me = async (req: AuthRequest, res: Response) => {
+export const me = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const token = req.headers.authorization;
-    if (!token) throw new Error("Authorization header missing");
+    if (!token) {
+      throw new CustomError("Authorization header missing", 400, false);
+    }
 
     const user = await getUserByAuthtoken(token);
     res.status(200).send({
       user,
     });
   } catch (error) {
-    logger.error(error);
-    res.status(401).send({
-      accessToken: null,
-      message: (error as Error).message,
-    });
+    next(error);
   }
 };

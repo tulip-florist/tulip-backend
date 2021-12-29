@@ -1,6 +1,5 @@
 import { ObjectId } from "mongodb";
 import { Request } from "express";
-import { Document as MongoDoc } from "mongodb";
 
 export interface User {
   id: ObjectId;

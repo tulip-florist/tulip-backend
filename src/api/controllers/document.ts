@@ -1,11 +1,11 @@
-import { Response } from "express";
+import { NextFunction, Response } from "express";
 import { AuthRequest, Document } from "../../types/types";
-import logger from "../../util/logger";
 import { getDocument, setOrCreateDocument } from "../logic/document";
 
 export const getDocumentByUserIdAndHash = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const userId = req.userId;
@@ -17,16 +17,14 @@ export const getDocumentByUserIdAndHash = async (
     const status = document ? 200 : 404;
     res.status(status).send(document);
   } catch (error) {
-    logger.error(error);
-    res.status(500).send({
-      error: (error as Error).message,
-    });
+    next(error);
   }
 };
 
 export const setDocumentByUserIdAndHash = async (
   req: AuthRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
   try {
     const userId = req.userId;
@@ -40,9 +38,6 @@ export const setDocumentByUserIdAndHash = async (
     const updatedDocument = await setOrCreateDocument(userId, document);
     res.status(200).send(updatedDocument);
   } catch (error) {
-    logger.error(error);
-    res.status(500).send({
-      error: (error as Error).message,
-    });
+    next(error);
   }
 };

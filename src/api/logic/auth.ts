@@ -3,7 +3,8 @@ import bcrypt from "bcrypt";
 import { Session, User } from "../../types/types";
 import { ObjectId } from "mongodb";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import logger from "../../util/logger";
+import { emailAlreadyExistsError } from "../../errors/emailAlreadyExistsError";
+import { CustomError } from "../../errors/CustomError";
 
 export const jwtAlgorithm: jwt.Algorithm = "HS512";
 
@@ -11,19 +12,19 @@ export const createEmailUser = async (
   email: string,
   password: string
 ): Promise<User | null> => {
-  try {
-    const emailExists = await emailExisting(email);
-    if (emailExists) return null;
+  const emailExists = await emailExisting(email);
+  if (emailExists) throw new emailAlreadyExistsError();
 
-    const newUser = await createUser();
+  const createdUser = await createUser();
+  try {
     const emailUser: User = await linkUserEmailAuth(
-      newUser.id,
+      createdUser.id,
       email,
       password
     );
     return emailUser;
   } catch (error) {
-    logger.error(error);
+    await deleteUser(createdUser.id);
     throw error;
   }
 };
@@ -37,10 +38,10 @@ export const signEmailUserIn = async (
   const users = db.collection("users");
 
   const user = await users.findOne({ "auth.email.email": email });
-  if (!user) throw new Error("User not found.");
+  if (!user) throw new CustomError("User not found.", 404, false);
 
   let passwordIsValid = bcrypt.compareSync(password, user.auth.email.password);
-  if (!passwordIsValid) throw new Error("Invalid Password.");
+  if (!passwordIsValid) throw new CustomError("Invalid password.", 403, false);
 
   const token = signUserToken(user._id);
   const resp: Session = {
@@ -51,7 +52,9 @@ export const signEmailUserIn = async (
 };
 
 export const signUserToken = (userId: string): string => {
-  if (!process.env.JWT_SECRET) throw new Error("Backend JWT_SECRET missing");
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT secret env variable missing");
+  }
 
   const issued = Date.now();
   const fifteenMinutesInMs = 15 * 60 * 1000;
@@ -71,7 +74,9 @@ export const signUserToken = (userId: string): string => {
 export const getUserByAuthtoken = async (
   authToken: string
 ): Promise<Omit<User, "auth">> => {
-  if (!process.env.JWT_SECRET) throw new Error("Server error");
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT secret env variable missing");
+  }
 
   const token = authToken.split(" ")[1]; // "Bearer <token>"
 
@@ -94,7 +99,12 @@ export const getUserByAuthtoken = async (
     return user;
   } else {
     // dbUser must exist since it passed the auth middleware
-    throw new Error("Invalid authorization token");
+    // if this error get's thrown something is wrong with the auth middleware
+    throw new CustomError("Invalid authorization token", undefined, true, {
+      token,
+      decodedUserId,
+      dbUser,
+    });
   }
 };
 
@@ -116,15 +126,16 @@ const createUser = async (): Promise<Omit<User, "auth">> => {
   const db = client.db(process.env.DB_NAME);
   const users = db.collection("users");
 
-  try {
-    const insertResult = await users.insertOne({});
-    const user: Omit<User, "auth"> = {
-      id: insertResult.insertedId,
-    };
-    return user;
-  } catch (error) {
-    throw new Error("Could not create user");
+  const insertResult = await users.insertOne({});
+  if (!insertResult.acknowledged) {
+    throw new CustomError("Could not create user", undefined, true);
   }
+
+  const user: Omit<User, "auth"> = {
+    id: insertResult.insertedId,
+  };
+
+  return user;
 };
 
 const emailExisting = async (email: string): Promise<boolean> => {
@@ -159,9 +170,25 @@ const linkUserEmailAuth = async (
     { _id: userId },
     { $set: { auth: user.auth } }
   );
-  if (updateResult.modifiedCount === 1) {
-    return user;
-  } else {
-    throw new Error("Could link userEmailAuth");
+
+  if (updateResult.modifiedCount !== 1) {
+    throw new CustomError("Could not link user to emailAuth", undefined, true, {
+      userId,
+    });
+  }
+
+  return user;
+};
+
+const deleteUser = async (userId: ObjectId) => {
+  const client = await DbClient.getInstance();
+  const db = client.db(process.env.DB_NAME);
+  const users = db.collection("users");
+
+  const deleteResult = await users.deleteOne({ _id: userId });
+  if (deleteResult.deletedCount !== 1) {
+    throw new CustomError("Could not delete user", undefined, true, {
+      userId,
+    });
   }
 };

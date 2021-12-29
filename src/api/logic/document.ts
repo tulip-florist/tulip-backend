@@ -1,5 +1,6 @@
 import { Document as MongoDoc, ObjectId } from "mongodb";
 import { DbClient } from "../../database/database";
+import { CustomError } from "../../errors/CustomError";
 import { Document } from "../../types/types";
 
 export const getDocument = async (
@@ -44,13 +45,24 @@ const createDocument = async (
     documentHash: document.documentHash,
     annotations,
   });
+  if (!insertResult.acknowledged) {
+    throw new CustomError("Could not create document", undefined, true, {
+      userId,
+      documentHash: document.documentHash,
+      annotations,
+    });
+  }
 
-  if (!insertResult.acknowledged) throw new Error("Could not create document");
   const newdocument = await documents.findOne({
     _id: insertResult.insertedId,
   });
+  if (!newdocument) {
+    throw new CustomError("Could not find created document", undefined, true, {
+      userId,
+      documentHash: document.documentHash,
+    });
+  }
 
-  if (!newdocument) throw new Error("Could not find created document");
   return newdocument;
 };
 
@@ -75,7 +87,12 @@ const updateAnnotations = async (
     }
   );
   const updatedDocument = result.value;
-  if (!updatedDocument) throw new Error("Couldn't find document to update");
+  if (!updatedDocument)
+    throw new CustomError("Couldn't update document", undefined, true, {
+      userId,
+      documentHash: document.documentHash,
+      annotations,
+    });
   return updatedDocument;
 };
 
@@ -83,11 +100,6 @@ const documentExists = async (
   userId: string,
   documentHash: string
 ): Promise<boolean> => {
-  try {
-    const document = await getDocument(userId, documentHash);
-    return !!document;
-  } catch (error) {
-    // Document not found
-    return false;
-  }
+  const document = await getDocument(userId, documentHash);
+  return !!document;
 };
