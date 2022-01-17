@@ -17,10 +17,10 @@ export const corsMiddleware = (
 
   res.header(
     "Access-Control-Allow-Headers",
-    "Origin, X-Requested-With, Content-Type, Accept, Authorization"
+    "Origin, X-Requested-With, Content-Type, Accept"
   );
   res.header("Access-Control-Allow-Methods", "POST,GET,OPTIONS,PUT,DELETE");
-  res.header("Access-Control-Expose-Headers", "Authorization"); // Required to have acces to Auth header in frontend
+  res.header("Access-Control-Allow-Credentials", "true");
 
   if (req.method === "OPTIONS") {
     // Preflight requests

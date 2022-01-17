@@ -28,6 +28,7 @@
     "@types/express": "^4.17.13",
     "@types/node": "^16.11.6",
     "bcrypt": "^5.0.1",
+    "cookie-parser": "^1.4.6",
     "cross-env": "^7.0.3",
     "dotenv": "^10.0.0",
     "express": "^4.17.1",
@@ -44,6 +45,7 @@
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",
+    "@types/cookie-parser": "^1.4.2",
     "@types/jsonwebtoken": "^8.5.5",
     "@types/morgan": "^1.9.3",
     "@types/morgan-json": "^1.1.0",

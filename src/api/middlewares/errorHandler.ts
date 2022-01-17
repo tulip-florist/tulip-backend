@@ -9,6 +9,7 @@ export const errorHandler = (
   next: NextFunction
 ) => {
   if (err instanceof CustomError && !err.isInternal) {
+    logger.info(err);
     return res.status(err.httpStatusCode).send({ errors: err.serialize() });
   }
   logger.error(err);

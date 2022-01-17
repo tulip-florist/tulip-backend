@@ -1,5 +1,6 @@
 require("dotenv").config();
 import express, { Express, Request, Response } from "express";
+import cookieParser from "cookie-parser";
 import logger from "./util/logger";
 import httpLogger from "./util/httpLogger";
 import helmet from "helmet";
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 8080;
 const app: Express = express();
 
 app.use(helmet());
+app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(httpLogger);

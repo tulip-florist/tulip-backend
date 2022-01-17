@@ -1,12 +1,26 @@
 import { DbClient } from "../../database/database";
 import bcrypt from "bcrypt";
-import { Session, User } from "../../types/types";
+import {
+  RefreshTokenDB,
+  RefreshTokenPayload,
+  Session,
+  User,
+} from "../../types/types";
 import { ObjectId } from "mongodb";
-import jwt, { JwtPayload } from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 import { emailAlreadyExistsError } from "../../errors/emailAlreadyExistsError";
 import { CustomError } from "../../errors/CustomError";
+import { inXMinutes } from "../../util/datesHelper";
+import {
+  RefreshTokenExpiredError,
+  RefreshTokenInvalidError,
+  RefreshTokenReusedError,
+} from "../../errors/authErrors";
+import Logger from "../../util/logger";
 
 export const jwtAlgorithm: jwt.Algorithm = "HS512";
+export const ACCESS_TOKEN_EXPIRATION = 600; // in seconds (= 10m)
+export const REFRESH_TOKEN_EXPIRATION = 86400; // in seconds (= 1d)
 
 export const createEmailUser = async (
   email: string,
@@ -43,82 +57,231 @@ export const signEmailUserIn = async (
   let passwordIsValid = bcrypt.compareSync(password, user.auth.email.password);
   if (!passwordIsValid) throw new CustomError("Invalid password.", 403, false);
 
-  const token = signUserToken(user._id);
-  const resp: Session = {
-    accessToken: token,
+  const accessToken = createAccessToken(user._id);
+  const refreshToken = await createRefreshToken(user._id);
+  const session: Session = {
+    accessToken,
+    refreshToken,
     userId: user._id,
   };
-  return resp;
+  return session;
 };
 
-export const signUserToken = (userId: string): string => {
+export const logout = async (refreshToken: string) => {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT secret env variable missing");
   }
 
-  const issued = Date.now();
-  const fifteenMinutesInMs = 15 * 60 * 1000;
-  const expires = issued + fifteenMinutesInMs;
-
-  const token = jwt.sign(
-    { id: userId, issued, expires },
-    process.env.JWT_SECRET,
-    {
-      algorithm: jwtAlgorithm,
-      expiresIn: expires,
+  let userId: string;
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET, {
+      algorithms: [jwtAlgorithm],
+    }) as RefreshTokenPayload;
+    userId = decoded.userId;
+  } catch (error) {
+    const err = error as Error;
+    if (err && err.name === "JsonWebTokenError") {
+      throw new RefreshTokenInvalidError();
+    } else if (err && err.name === "TokenExpiredError") {
+      const payload = jwt.decode(refreshToken) as RefreshTokenPayload;
+      userId = payload.userId;
+    } else {
+      throw error;
     }
-  );
-  return token;
+  }
+
+  const refreshTokenDbValid = await isRefreshTokenDbValid(userId, refreshToken);
+  await invalidateRefreshToken(userId, refreshToken);
+
+  if (!refreshTokenDbValid) {
+    await invalidateUserRefreshTokens(new ObjectId(userId));
+    Logger.warn({
+      message: "Refresh token reused",
+      userId,
+      refreshToken,
+    });
+    throw new RefreshTokenReusedError();
+  }
 };
 
-export const getUserByAuthtoken = async (
-  authToken: string
-): Promise<Omit<User, "auth">> => {
+export const refreshToken = async (
+  refreshToken: string
+): Promise<Omit<Session, "userId">> => {
   if (!process.env.JWT_SECRET) {
     throw new Error("JWT secret env variable missing");
   }
 
-  const token = authToken.split(" ")[1]; // "Bearer <token>"
+  let userId: string;
+  let tokenExpired = false;
 
-  const decoded = jwt.verify(token, process.env.JWT_SECRET, {
-    algorithms: [jwtAlgorithm],
-  }) as JwtPayload;
-  const decodedUserId: string = decoded.id;
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET, {
+      algorithms: [jwtAlgorithm],
+    }) as RefreshTokenPayload;
+    userId = decoded.userId;
+  } catch (error) {
+    const err = error as Error;
+    if (err.name === "JsonWebTokenError") {
+      throw new RefreshTokenInvalidError();
+    } else if (err.name === "TokenExpiredError") {
+      tokenExpired = true;
+      const payload = jwt.decode(refreshToken) as RefreshTokenPayload;
+      userId = payload.userId;
+    } else {
+      throw error;
+    }
+  }
 
+  const tokenDbValid = await isRefreshTokenDbValid(userId, refreshToken);
+  if (tokenDbValid) {
+    if (tokenExpired) {
+      throw new RefreshTokenExpiredError();
+    }
+
+    await invalidateRefreshToken(userId, refreshToken);
+
+    const renewedSession = {
+      accessToken: createAccessToken(new ObjectId(userId)),
+      refreshToken: await createRefreshToken(new ObjectId(userId)),
+    };
+    return renewedSession;
+  } else {
+    await invalidateUserRefreshTokens(new ObjectId(userId));
+    Logger.warn({
+      message: "Refresh token reused",
+      userId,
+      refreshToken,
+    });
+    throw new RefreshTokenReusedError();
+  }
+};
+
+export const getUserById = async (
+  userId: string
+): Promise<Omit<User, "auth"> | null> => {
   const client = await DbClient.getInstance();
   const db = client.db(process.env.DB_NAME);
   const users = db.collection("users");
 
-  const dbUser = await users.findOne({ _id: new ObjectId(decodedUserId) });
-  if (dbUser) {
-    // user will contain more information in the future
-    const user = {
-      id: dbUser._id,
-      email: dbUser.auth.email.email,
-    };
-    return user;
-  } else {
-    // dbUser must exist since it passed the auth middleware
-    // if this error get's thrown something is wrong with the auth middleware
-    throw new CustomError("Invalid authorization token", undefined, true, {
-      token,
-      decodedUserId,
-      dbUser,
-    });
+  const dbUser = await users.findOne({ _id: new ObjectId(userId) });
+  if (!dbUser) return null;
+  const user = {
+    id: dbUser._id,
+    email: dbUser.auth.email.email,
+  };
+  return user;
+};
+
+const createAccessToken = (
+  userId: ObjectId,
+  expiresIn: number = ACCESS_TOKEN_EXPIRATION
+): string => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT secret env variable missing");
+  }
+
+  const accessToken = jwt.sign({ userId }, process.env.JWT_SECRET, {
+    algorithm: jwtAlgorithm,
+    expiresIn,
+  });
+  return accessToken;
+};
+
+const createRefreshToken = async (
+  userId: ObjectId,
+  expiresIn: number = REFRESH_TOKEN_EXPIRATION
+) => {
+  const client = await DbClient.getInstance();
+  const db = client.db(process.env.DB_NAME);
+  const refreshTokens = db.collection("refreshTokens");
+
+  if (!process.env.JWT_SECRET) {
+    throw new Error("JWT secret env variable missing");
+  }
+
+  const refreshToken = jwt.sign({ userId }, process.env.JWT_SECRET, {
+    algorithm: jwtAlgorithm,
+    expiresIn,
+  });
+
+  const refreshTokenDb: RefreshTokenDB = {
+    userId: userId,
+    refreshToken,
+    valid: true,
+    iat: Date.now(),
+    exp: inXMinutes(REFRESH_TOKEN_EXPIRATION / 60),
+  };
+
+  const insertResult = await refreshTokens.insertOne(refreshTokenDb);
+  if (!insertResult.acknowledged) {
+    throw new CustomError("Could not create refreshToken", undefined, true);
+  }
+
+  return refreshToken;
+};
+
+const invalidateRefreshToken = async (userId: string, refreshToken: string) => {
+  const client = await DbClient.getInstance();
+  const db = client.db(process.env.DB_NAME);
+  const refreshTokens = db.collection("refreshTokens");
+
+  const updateResult = await refreshTokens.updateOne(
+    { userId: new ObjectId(userId), refreshToken },
+    { $set: { valid: false } }
+  );
+
+  if (!updateResult.acknowledged) {
+    throw new CustomError(
+      "Could not invalidate refresh token.",
+      undefined,
+      true,
+      {
+        userId,
+      }
+    );
   }
 };
 
-export const checkExpirationStatus = (token: JwtPayload) => {
-  const now = Date.now();
-  if (token.expires) {
-    if (token.expires > now) return "valid";
-    const oneHourInMs = 1 * 60 * 60 * 1000;
-    const oneHourAfterExpiration = token.expires + oneHourInMs;
-    if (oneHourAfterExpiration > now) {
-      return "renew";
-    }
+const invalidateUserRefreshTokens = async (userId: ObjectId) => {
+  const client = await DbClient.getInstance();
+  const db = client.db(process.env.DB_NAME);
+  const refreshTokens = db.collection("refreshTokens");
+
+  const updateResult = await refreshTokens.updateMany(
+    { userId },
+    { $set: { valid: false } }
+  );
+
+  if (!updateResult.acknowledged) {
+    throw new CustomError(
+      "Could not invalidate refresh tokens.",
+      undefined,
+      true,
+      {
+        userId,
+      }
+    );
   }
-  return "expired";
+};
+
+const isRefreshTokenDbValid = async (
+  userId: string,
+  refreshToken: string
+): Promise<boolean> => {
+  const client = await DbClient.getInstance();
+  const db = client.db(process.env.DB_NAME);
+  const refreshTokens = db.collection("refreshTokens");
+
+  const refreshTokenDb = await refreshTokens.findOne({
+    userId: new ObjectId(userId),
+    refreshToken,
+  });
+
+  if (refreshTokenDb) {
+    const dbToken = refreshTokenDb as RefreshTokenDB;
+    return dbToken.valid;
+  }
+  return false;
 };
 
 const createUser = async (): Promise<Omit<User, "auth">> => {
@@ -136,15 +299,6 @@ const createUser = async (): Promise<Omit<User, "auth">> => {
   };
 
   return user;
-};
-
-const emailExisting = async (email: string): Promise<boolean> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
-  const users = db.collection("users");
-
-  const emailUser = await users.findOne({ "auth.email.email": email });
-  return !!emailUser;
 };
 
 const linkUserEmailAuth = async (
@@ -191,4 +345,13 @@ const deleteUser = async (userId: ObjectId) => {
       userId,
     });
   }
+};
+
+const emailExisting = async (email: string): Promise<boolean> => {
+  const client = await DbClient.getInstance();
+  const db = client.db(process.env.DB_NAME);
+  const users = db.collection("users");
+
+  const emailUser = await users.findOne({ "auth.email.email": email });
+  return !!emailUser;
 };

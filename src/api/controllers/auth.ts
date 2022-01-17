@@ -1,13 +1,20 @@
 import {
   createEmailUser,
-  getUserByAuthtoken,
+  getUserById,
+  logout,
   signEmailUserIn,
+  refreshToken,
+  ACCESS_TOKEN_EXPIRATION,
 } from "../logic/auth";
 import { NextFunction, Request, Response } from "express";
-import { AuthRequest } from "../../types/types";
-import { CustomError } from "../../errors/CustomError";
+import { ACCESS_TOKEN, AuthRequest, REFRESH_TOKEN } from "../../types/types";
+import { inXMinutes, inXMonths } from "../../util/datesHelper";
+import { RefreshTokenMissingError } from "../../errors/authErrors";
 
-export const emailSignup = async (
+const ACCESS_TOKEN_COOKIE_EXPIRATION = ACCESS_TOKEN_EXPIRATION / 60; // minutes
+const REFRESH_TOKEN_COOKIE_EXPIRATION = 6; // months
+
+export const emailRegister = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -21,7 +28,7 @@ export const emailSignup = async (
   }
 };
 
-export const emailSignin = async (
+export const emailLogin = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -29,8 +36,20 @@ export const emailSignin = async (
   // TODO validation
   try {
     const session = await signEmailUserIn(req.body.email, req.body.password);
-    res.setHeader("Authorization", session.accessToken); // TODO refactor to use: "Bearer <token>"
-    res.sendStatus(200);
+    res
+      .cookie(ACCESS_TOKEN, session.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        expires: inXMinutes(ACCESS_TOKEN_COOKIE_EXPIRATION),
+        sameSite: "lax",
+      })
+      .cookie(REFRESH_TOKEN, session.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        expires: inXMonths(REFRESH_TOKEN_COOKIE_EXPIRATION),
+        sameSite: "lax",
+      })
+      .sendStatus(200);
   } catch (error) {
     next(error);
   }
@@ -43,16 +62,59 @@ export const me = async (
   next: NextFunction
 ) => {
   try {
-    const token = req.headers.authorization;
-    if (!token) {
-      throw new CustomError("Authorization header missing", 400, false);
-    }
-
-    const user = await getUserByAuthtoken(token);
+    const user = await getUserById(req.userId!); // req.userId must be set if authentication was successful
     res.status(200).send({
       user,
     });
   } catch (error) {
+    next(error);
+  }
+};
+
+export const logOut = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const refreshToken = req.cookies[REFRESH_TOKEN];
+    if (!refreshToken) throw new RefreshTokenMissingError();
+
+    res.clearCookie(ACCESS_TOKEN).clearCookie(REFRESH_TOKEN);
+    await logout(refreshToken);
+    res.sendStatus(200);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const token = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const refresh_token = req.cookies[REFRESH_TOKEN];
+    if (!refresh_token) throw new RefreshTokenMissingError();
+
+    const session = await refreshToken(refresh_token);
+
+    res
+      .cookie(ACCESS_TOKEN, session.accessToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        expires: inXMinutes(ACCESS_TOKEN_COOKIE_EXPIRATION),
+        sameSite: "lax",
+      })
+      .cookie(REFRESH_TOKEN, session.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        expires: inXMonths(REFRESH_TOKEN_COOKIE_EXPIRATION),
+        sameSite: "lax",
+      })
+      .sendStatus(200);
+  } catch (error) {
+    res.clearCookie(ACCESS_TOKEN).clearCookie(REFRESH_TOKEN);
     next(error);
   }
 };

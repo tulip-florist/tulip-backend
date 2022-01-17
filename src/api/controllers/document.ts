@@ -1,4 +1,5 @@
 import { NextFunction, Response } from "express";
+import { CustomError } from "../../errors/CustomError";
 import { AuthRequest, Document } from "../../types/types";
 import { getDocument, setOrCreateDocument } from "../logic/document";
 
@@ -8,12 +9,11 @@ export const getDocumentByUserIdAndHash = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.userId;
     const documentHash = req.params.documentHash as string;
-    if (!userId || !documentHash)
-      return res.status(400).send({ error: "Missing parameter: documentHash" });
 
-    const document = await getDocument(userId, documentHash);
+    if (!documentHash) throw new CustomError("'documentHash' missing", 400);
+
+    const document = await getDocument(req.userId!, documentHash);
     const status = document ? 200 : 404;
     res.status(status).send(document);
   } catch (error) {
@@ -27,15 +27,15 @@ export const setDocumentByUserIdAndHash = async (
   next: NextFunction
 ) => {
   try {
-    const userId = req.userId;
     const documentHash = req.params.documentHash;
     const document = req.body.document as Omit<Document, "id" | "userId">;
-    if (!userId || !document)
-      return res.status(400).send({ error: "Document missing" });
-    if (documentHash !== document.documentHash)
-      return res.status(400).send({ error: "Document hashes not matching" });
 
-    const updatedDocument = await setOrCreateDocument(userId, document);
+    if (!document) throw new CustomError("'document' missing", 400);
+    if (documentHash !== document.documentHash) {
+      throw new CustomError("document hashes not matching", 400);
+    }
+
+    const updatedDocument = await setOrCreateDocument(req.userId!, document);
     res.status(200).send(updatedDocument);
   } catch (error) {
     next(error);
