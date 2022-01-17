@@ -52,10 +52,11 @@ export const signEmailUserIn = async (
   const users = db.collection("users");
 
   const user = await users.findOne({ "auth.email.email": email });
-  if (!user) throw new CustomError("User not found.", 404, false);
+  if (!user) throw new CustomError("Invalid email or password", 401, false);
 
   let passwordIsValid = bcrypt.compareSync(password, user.auth.email.password);
-  if (!passwordIsValid) throw new CustomError("Invalid password.", 403, false);
+  if (!passwordIsValid)
+    throw new CustomError("Invalid email or password", 401, false);
 
   const accessToken = createAccessToken(user._id);
   const refreshToken = await createRefreshToken(user._id);
