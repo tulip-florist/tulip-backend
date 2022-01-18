@@ -42,3 +42,9 @@ export class RefreshTokenReusedError extends CustomError {
     super(`${REFRESH_TOKEN} reused`, undefined, true);
   }
 }
+
+export class InvalidLoginCredentials extends CustomError {
+  constructor() {
+    super("Invalid email or password", 401, false);
+  }
+}

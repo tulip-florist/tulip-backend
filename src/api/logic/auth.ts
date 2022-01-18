@@ -1,5 +1,6 @@
 import { DbClient } from "../../database/database";
 import bcrypt from "bcrypt";
+import argon2 from "argon2";
 import {
   RefreshTokenDB,
   RefreshTokenPayload,
@@ -12,6 +13,7 @@ import { emailAlreadyExistsError } from "../../errors/emailAlreadyExistsError";
 import { CustomError } from "../../errors/CustomError";
 import { inXMinutes } from "../../util/datesHelper";
 import {
+  InvalidLoginCredentials,
   RefreshTokenExpiredError,
   RefreshTokenInvalidError,
   RefreshTokenReusedError,
@@ -52,11 +54,37 @@ export const signEmailUserIn = async (
   const users = db.collection("users");
 
   const user = await users.findOne({ "auth.email.email": email });
-  if (!user) throw new CustomError("Invalid email or password", 401, false);
+  if (!user) throw new InvalidLoginCredentials();
 
-  let passwordIsValid = bcrypt.compareSync(password, user.auth.email.password);
-  if (!passwordIsValid)
-    throw new CustomError("Invalid email or password", 401, false);
+  const dbPassword: string = user.auth.email.password;
+
+  // migrating from bcrypt to argon2
+  if (dbPassword.indexOf("$argon2") === 0) {
+    // argon2
+    const match = await argon2.verify(dbPassword, password, {
+      type: argon2.argon2id,
+      parallelism: 2,
+      memoryCost: 15360,
+      timeCost: 4,
+    });
+
+    if (!match) {
+      throw new InvalidLoginCredentials();
+    }
+  } else {
+    // bcrypt
+    const match = await bcrypt.compare(password, dbPassword);
+    if (!match) {
+      throw new InvalidLoginCredentials();
+    }
+
+    // migrate to argon2
+    const argon2Hash = await argon2.hash(password);
+    await users.updateOne(
+      { _id: user._id },
+      { $set: { auth: { password: argon2Hash } } }
+    );
+  }
 
   const accessToken = createAccessToken(user._id);
   const refreshToken = await createRefreshToken(user._id);
@@ -311,28 +339,37 @@ const linkUserEmailAuth = async (
   const db = client.db(process.env.DB_NAME);
   const users = db.collection("users");
 
-  const user: User = {
-    id: userId,
-    auth: {
-      email: {
-        email,
-        password: bcrypt.hashSync(password, 8),
+  try {
+    const user: User = {
+      id: userId,
+      auth: {
+        email: {
+          email,
+          password: await argon2.hash(password),
+        },
       },
-    },
-  };
+    };
 
-  const updateResult = await users.updateOne(
-    { _id: userId },
-    { $set: { auth: user.auth } }
-  );
+    const updateResult = await users.updateOne(
+      { _id: userId },
+      { $set: { auth: user.auth } }
+    );
 
-  if (updateResult.modifiedCount !== 1) {
-    throw new CustomError("Could not link user to emailAuth", undefined, true, {
-      userId,
-    });
+    if (updateResult.modifiedCount !== 1) {
+      throw new CustomError(
+        "Could not link user to emailAuth",
+        undefined,
+        true,
+        {
+          userId,
+        }
+      );
+    }
+
+    return user;
+  } catch (err) {
+    throw new CustomError("Couldn't hash password");
   }
-
-  return user;
 };
 
 const deleteUser = async (userId: ObjectId) => {
