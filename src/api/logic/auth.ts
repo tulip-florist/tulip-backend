@@ -82,7 +82,7 @@ export const signEmailUserIn = async (
     const argon2Hash = await argon2.hash(password);
     await users.updateOne(
       { _id: user._id },
-      { $set: { auth: { password: argon2Hash } } }
+      { $set: { "auth.email.password": argon2Hash } }
     );
   }
 
