@@ -8,6 +8,7 @@ import indexRouter from "./api/routes";
 import { corsMiddleware } from "./api/middlewares/cors";
 import { CustomError } from "./errors/CustomError";
 import { errorHandler } from "./api/middlewares/errorHandler";
+const mongoSanitize = require("express-mongo-sanitize");
 
 const PORT = process.env.PORT || 8080;
 const app: Express = express();
@@ -20,6 +21,7 @@ app.use(httpLogger);
 
 app.use(corsMiddleware);
 app.use("/v1/", indexRouter);
+app.use(mongoSanitize());
 app.use(errorHandler);
 
 app.listen(PORT, () => logger.info(`Running on ${PORT}`));
