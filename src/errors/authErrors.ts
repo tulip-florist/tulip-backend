@@ -43,6 +43,12 @@ export class RefreshTokenReusedError extends CustomError {
   }
 }
 
+export class emailAlreadyUsedError extends CustomError {
+  constructor() {
+    super("Email already registered", 409, false);
+  }
+}
+
 export class InvalidLoginCredentials extends CustomError {
   constructor() {
     super("Invalid email or password", 401, false);

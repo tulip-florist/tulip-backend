@@ -9,10 +9,10 @@ import {
 } from "../../types/types";
 import { ObjectId } from "mongodb";
 import jwt from "jsonwebtoken";
-import { emailAlreadyExistsError } from "../../errors/emailAlreadyExistsError";
 import { CustomError } from "../../errors/CustomError";
 import { inXMinutes } from "../../util/datesHelper";
 import {
+  emailAlreadyUsedError,
   InvalidLoginCredentials,
   RefreshTokenExpiredError,
   RefreshTokenInvalidError,
@@ -29,7 +29,7 @@ export const createEmailUser = async (
   password: string
 ): Promise<User | null> => {
   const emailExists = await emailExisting(email);
-  if (emailExists) throw new emailAlreadyExistsError();
+  if (emailExists) throw new emailAlreadyUsedError();
 
   const createdUser = await createUser();
   try {
@@ -243,7 +243,7 @@ const createRefreshToken = async (
 
   const insertResult = await refreshTokens.insertOne(refreshTokenDb);
   if (!insertResult.acknowledged) {
-    throw new CustomError("Could not create refreshToken", undefined, true);
+    throw new CustomError("Could not create refreshToken");
   }
 
   return refreshToken;
@@ -320,7 +320,7 @@ const createUser = async (): Promise<Omit<User, "auth">> => {
 
   const insertResult = await users.insertOne({});
   if (!insertResult.acknowledged) {
-    throw new CustomError("Could not create user", undefined, true);
+    throw new CustomError("Could not create user");
   }
 
   const user: Omit<User, "auth"> = {

@@ -10,6 +10,8 @@ import { NextFunction, Request, Response } from "express";
 import { ACCESS_TOKEN, AuthRequest, REFRESH_TOKEN } from "../../types/types";
 import { inXMinutes, inXMonths } from "../../util/datesHelper";
 import { RefreshTokenMissingError } from "../../errors/authErrors";
+import validator from "validator";
+import { CustomError } from "../../errors/CustomError";
 
 const ACCESS_TOKEN_COOKIE_EXPIRATION = ACCESS_TOKEN_EXPIRATION / 60; // minutes
 const REFRESH_TOKEN_COOKIE_EXPIRATION = 6; // months
@@ -19,9 +21,17 @@ export const emailRegister = async (
   res: Response,
   next: NextFunction
 ) => {
-  // TODO validation
   try {
-    await createEmailUser(req.body.email, req.body.password);
+    const { email, password } = req.body;
+    if (!validator.isEmail(email))
+      throw new CustomError("Invalid email", 400, false);
+    if (!validator.isStrongPassword(password))
+      throw new CustomError("Password not strong enough", 400, false);
+
+    const normEmail = validator.trim(validator.normalizeEmail(email) || email);
+    const normPassword = validator.trim(password);
+
+    await createEmailUser(normEmail, normPassword);
     res.sendStatus(201);
   } catch (error) {
     next(error);
@@ -33,9 +43,15 @@ export const emailLogin = async (
   res: Response,
   next: NextFunction
 ) => {
-  // TODO validation
   try {
-    const session = await signEmailUserIn(req.body.email, req.body.password);
+    const { email, password } = req.body;
+    if (!validator.isEmail(email))
+      throw new CustomError("Invalid email", 400, false);
+
+    const normEmail = validator.trim(validator.normalizeEmail(email) || email);
+    const normPassword = validator.trim(password);
+
+    const session = await signEmailUserIn(normEmail, normPassword);
     res
       .cookie(ACCESS_TOKEN, session.accessToken, {
         httpOnly: true,
