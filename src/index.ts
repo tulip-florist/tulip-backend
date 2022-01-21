@@ -8,10 +8,13 @@ import indexRouter from "./api/routes";
 import { corsMiddleware } from "./api/middlewares/cors";
 import { CustomError } from "./errors/CustomError";
 import { errorHandler } from "./api/middlewares/errorHandler";
+import { connectDB } from "./database/database";
 const mongoSanitize = require("express-mongo-sanitize");
 
 const PORT = process.env.PORT || 8080;
 const app: Express = express();
+
+connectDB();
 
 app.use(helmet());
 app.use(cookieParser());

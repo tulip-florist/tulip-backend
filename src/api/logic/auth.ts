@@ -1,4 +1,3 @@
-import { DbClient } from "../../database/database";
 import bcrypt from "bcrypt";
 import argon2 from "argon2";
 import {
@@ -19,6 +18,7 @@ import {
   RefreshTokenReusedError,
 } from "../../errors/authErrors";
 import Logger from "../../util/logger";
+import { db } from "../../database/database";
 
 export const jwtAlgorithm: jwt.Algorithm = "HS512";
 export const ACCESS_TOKEN_EXPIRATION = 600; // in seconds (= 10m)
@@ -49,11 +49,9 @@ export const signEmailUserIn = async (
   email: string,
   password: string
 ): Promise<Session> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const users = db.collection("users");
-
   const user = await users.findOne({ "auth.email.email": email });
+
   if (!user) throw new InvalidLoginCredentials();
 
   const dbPassword: string = user.auth.email.password;
@@ -188,8 +186,6 @@ export const refreshToken = async (
 export const getUserById = async (
   userId: string
 ): Promise<Omit<User, "auth"> | null> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const users = db.collection("users");
 
   const dbUser = await users.findOne({ _id: new ObjectId(userId) });
@@ -220,8 +216,6 @@ const createRefreshToken = async (
   userId: ObjectId,
   expiresIn: number = REFRESH_TOKEN_EXPIRATION
 ) => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const refreshTokens = db.collection("refreshTokens");
 
   if (!process.env.JWT_SECRET) {
@@ -250,8 +244,6 @@ const createRefreshToken = async (
 };
 
 const invalidateRefreshToken = async (userId: string, refreshToken: string) => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const refreshTokens = db.collection("refreshTokens");
 
   const updateResult = await refreshTokens.updateOne(
@@ -272,8 +264,6 @@ const invalidateRefreshToken = async (userId: string, refreshToken: string) => {
 };
 
 const invalidateUserRefreshTokens = async (userId: ObjectId) => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const refreshTokens = db.collection("refreshTokens");
 
   const updateResult = await refreshTokens.updateMany(
@@ -297,8 +287,6 @@ const isRefreshTokenDbValid = async (
   userId: string,
   refreshToken: string
 ): Promise<boolean> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const refreshTokens = db.collection("refreshTokens");
 
   const refreshTokenDb = await refreshTokens.findOne({
@@ -314,8 +302,6 @@ const isRefreshTokenDbValid = async (
 };
 
 const createUser = async (): Promise<Omit<User, "auth">> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const users = db.collection("users");
 
   const insertResult = await users.insertOne({});
@@ -335,8 +321,6 @@ const linkUserEmailAuth = async (
   email: string,
   password: string
 ): Promise<User> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const users = db.collection("users");
 
   try {
@@ -373,8 +357,6 @@ const linkUserEmailAuth = async (
 };
 
 const deleteUser = async (userId: ObjectId) => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const users = db.collection("users");
 
   const deleteResult = await users.deleteOne({ _id: userId });
@@ -386,8 +368,6 @@ const deleteUser = async (userId: ObjectId) => {
 };
 
 const emailExisting = async (email: string): Promise<boolean> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const users = db.collection("users");
 
   const emailUser = await users.findOne({ "auth.email.email": email });

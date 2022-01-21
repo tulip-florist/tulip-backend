@@ -11,7 +11,8 @@ export const getDocumentByUserIdAndHash = async (
   try {
     const documentHash = req.params.documentHash as string;
 
-    if (!documentHash) throw new CustomError("'documentHash' missing", 400);
+    if (!documentHash)
+      throw new CustomError("'documentHash' missing", 400, false);
 
     const document = await getDocument(req.userId!, documentHash);
     const status = document ? 200 : 404;
@@ -30,9 +31,10 @@ export const setDocumentByUserIdAndHash = async (
     const documentHash = req.params.documentHash;
     const document = req.body.document as Omit<Document, "id" | "userId">;
 
-    if (!document) throw new CustomError("'document' missing", 400);
+    if (!document) throw new CustomError("'document' missing", 400, false);
+
     if (documentHash !== document.documentHash) {
-      throw new CustomError("document hashes not matching", 400);
+      throw new CustomError("document hashes not matching", 400, false);
     }
 
     const updatedDocument = await setOrCreateDocument(req.userId!, document);

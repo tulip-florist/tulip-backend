@@ -1,5 +1,5 @@
 import { Document as MongoDoc, ObjectId } from "mongodb";
-import { DbClient } from "../../database/database";
+import { db } from "../../database/database";
 import { CustomError } from "../../errors/CustomError";
 import { Document } from "../../types/types";
 
@@ -7,8 +7,6 @@ export const getDocument = async (
   userId: string,
   documentHash: Document["documentHash"]
 ): Promise<MongoDoc | null> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const documents = db.collection("documents");
 
   let document = await documents.findOne({
@@ -35,8 +33,6 @@ const createDocument = async (
   userId: string,
   document: Omit<Document, "id" | "userId">
 ): Promise<MongoDoc> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const documents = db.collection("documents");
 
   const annotations = document.annotations ? document.annotations : [];
@@ -70,8 +66,6 @@ const updateAnnotations = async (
   userId: string,
   document: Omit<Document, "userId" | "id">
 ): Promise<MongoDoc> => {
-  const client = await DbClient.getInstance();
-  const db = client.db(process.env.DB_NAME);
   const documents = db.collection("documents");
 
   const annotations = document.annotations ? document.annotations : [];
