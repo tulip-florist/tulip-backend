@@ -1,5 +1,5 @@
 import { Response, NextFunction } from "express";
-import { jwtAlgorithm } from "../logic/auth";
+import { jwtAlgorithm } from "../services/auth";
 import jwt from "jsonwebtoken";
 import {
   AccessTokenPayload,

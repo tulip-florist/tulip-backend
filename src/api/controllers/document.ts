@@ -1,9 +1,12 @@
 import { NextFunction, Response } from "express";
 import { CustomError } from "../../errors/CustomError";
 import { AuthRequest, Document } from "../../types/types";
-import { getDocument, setOrCreateDocument } from "../logic/document";
+import {
+  getDocument,
+  createOrUpdateDocumentAnnotations,
+} from "../services/document";
 
-export const getDocumentByUserIdAndHash = async (
+export const getDocumentController = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -14,15 +17,15 @@ export const getDocumentByUserIdAndHash = async (
     if (!documentHash)
       throw new CustomError("'documentHash' missing", 400, false);
 
-    const document = await getDocument(req.userId!, documentHash);
-    const status = document ? 200 : 404;
-    res.status(status).send(document);
+    const documentDb = await getDocument(req.userId!, documentHash);
+    const status = documentDb ? 200 : 404;
+    res.status(status).send(documentDb);
   } catch (error) {
     next(error);
   }
 };
 
-export const setDocumentByUserIdAndHash = async (
+export const setDocumentController = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -37,7 +40,10 @@ export const setDocumentByUserIdAndHash = async (
       throw new CustomError("document hashes not matching", 400, false);
     }
 
-    const updatedDocument = await setOrCreateDocument(req.userId!, document);
+    const updatedDocument = await createOrUpdateDocumentAnnotations(
+      req.userId!,
+      document
+    );
     res.status(200).send(updatedDocument);
   } catch (error) {
     next(error);

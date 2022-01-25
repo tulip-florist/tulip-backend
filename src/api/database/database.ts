@@ -1,5 +1,5 @@
 import { Db, MongoClient } from "mongodb";
-import logger from "../util/logger";
+import logger from "../../util/logger";
 
 const db_username = process.env.DB_USERNAME;
 const db_password = process.env.DB_PASSWORD;

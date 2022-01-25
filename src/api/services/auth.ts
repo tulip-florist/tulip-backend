@@ -18,7 +18,7 @@ import {
   RefreshTokenReusedError,
 } from "../../errors/authErrors";
 import Logger from "../../util/logger";
-import { db } from "../../database/database";
+import { db } from "../database/database";
 
 export const jwtAlgorithm: jwt.Algorithm = "HS512";
 export const ACCESS_TOKEN_EXPIRATION = 600; // in seconds (= 10m)

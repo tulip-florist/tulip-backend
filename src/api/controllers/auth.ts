@@ -5,7 +5,7 @@ import {
   signEmailUserIn,
   refreshToken,
   ACCESS_TOKEN_EXPIRATION,
-} from "../logic/auth";
+} from "../services/auth";
 import { NextFunction, Request, Response } from "express";
 import { ACCESS_TOKEN, AuthRequest, REFRESH_TOKEN } from "../../types/types";
 import { inXMinutes, inXMonths } from "../../util/datesHelper";
