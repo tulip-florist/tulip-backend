@@ -9,20 +9,4 @@ const indexRouter = express.Router();
 indexRouter.use("/auth", authRouter);
 indexRouter.use("/documents", authenticate, documentRouter);
 
-// TEST ENDPOINTS:
-indexRouter.get("/", (req: Request, res: Response) => {
-  res.sendStatus(200);
-});
-indexRouter.get(
-  "/protected",
-  authenticate,
-  (req: AuthRequest, res: Response) => {
-    if (!req.userId) {
-      res.sendStatus(403);
-    } else {
-      res.sendStatus(200);
-    }
-  }
-);
-
 export default indexRouter;
