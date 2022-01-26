@@ -7,7 +7,7 @@ import {
   ACCESS_TOKEN_EXPIRATION,
 } from "../services/auth";
 import { NextFunction, Request, Response } from "express";
-import { ACCESS_TOKEN, AuthRequest, REFRESH_TOKEN } from "../../types/types";
+import { AuthRequest, Tokens } from "../../types/types";
 import { inXMinutes, inXMonths } from "../../util/datesHelper";
 import { RefreshTokenMissingError } from "../../errors/authErrors";
 import validator from "validator";
@@ -53,13 +53,13 @@ export const emailLogin = async (
 
     const session = await signEmailUserIn(normEmail, normPassword);
     res
-      .cookie(ACCESS_TOKEN, session.accessToken, {
+      .cookie(Tokens.ACCESS_TOKEN, session.accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         expires: inXMinutes(ACCESS_TOKEN_COOKIE_EXPIRATION),
         sameSite: "lax",
       })
-      .cookie(REFRESH_TOKEN, session.refreshToken, {
+      .cookie(Tokens.REFRESH_TOKEN, session.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         expires: inXMonths(REFRESH_TOKEN_COOKIE_EXPIRATION),
@@ -93,10 +93,10 @@ export const logOut = async (
   next: NextFunction
 ) => {
   try {
-    const refreshToken = req.cookies[REFRESH_TOKEN];
+    const refreshToken = req.cookies[Tokens.REFRESH_TOKEN];
     if (!refreshToken) throw new RefreshTokenMissingError();
 
-    res.clearCookie(ACCESS_TOKEN).clearCookie(REFRESH_TOKEN);
+    res.clearCookie(Tokens.ACCESS_TOKEN).clearCookie(Tokens.REFRESH_TOKEN);
     await logout(refreshToken);
     res.sendStatus(200);
   } catch (err) {
@@ -110,19 +110,19 @@ export const token = async (
   next: NextFunction
 ) => {
   try {
-    const refresh_token = req.cookies[REFRESH_TOKEN];
+    const refresh_token = req.cookies[Tokens.REFRESH_TOKEN];
     if (!refresh_token) throw new RefreshTokenMissingError();
 
     const session = await refreshToken(refresh_token);
 
     res
-      .cookie(ACCESS_TOKEN, session.accessToken, {
+      .cookie(Tokens.ACCESS_TOKEN, session.accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         expires: inXMinutes(ACCESS_TOKEN_COOKIE_EXPIRATION),
         sameSite: "lax",
       })
-      .cookie(REFRESH_TOKEN, session.refreshToken, {
+      .cookie(Tokens.REFRESH_TOKEN, session.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         expires: inXMonths(REFRESH_TOKEN_COOKIE_EXPIRATION),
@@ -130,7 +130,7 @@ export const token = async (
       })
       .sendStatus(200);
   } catch (error) {
-    res.clearCookie(ACCESS_TOKEN).clearCookie(REFRESH_TOKEN);
+    res.clearCookie(Tokens.ACCESS_TOKEN).clearCookie(Tokens.REFRESH_TOKEN);
     next(error);
   }
 };

@@ -1,11 +1,7 @@
 import { Response, NextFunction } from "express";
 import { jwtAlgorithm } from "../services/auth";
 import jwt from "jsonwebtoken";
-import {
-  AccessTokenPayload,
-  ACCESS_TOKEN,
-  AuthRequest,
-} from "../../types/types";
+import { AccessTokenPayload, AuthRequest, Tokens } from "../../types/types";
 import {
   AccessTokenExpiredError,
   AccessTokenInvalidError,
@@ -17,7 +13,7 @@ export const authenticate = async (
   res: Response,
   next: NextFunction
 ) => {
-  const accessToken = req.cookies[ACCESS_TOKEN];
+  const accessToken = req.cookies[Tokens.ACCESS_TOKEN];
 
   if (!accessToken) {
     return next(new AccessTokenMissingError());

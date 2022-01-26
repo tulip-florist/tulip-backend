@@ -47,8 +47,10 @@ export interface AuthRequest extends Request {
   // };
 }
 
-export const ACCESS_TOKEN: string = "access_token";
-export const REFRESH_TOKEN: string = "refresh_token";
+export enum Tokens {
+  ACCESS_TOKEN = "access_token",
+  REFRESH_TOKEN = "refresh_token",
+}
 
 export interface RefreshTokenDB extends MongoDoc {
   userId: ObjectId;
