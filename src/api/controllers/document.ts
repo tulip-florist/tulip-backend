@@ -19,7 +19,7 @@ export const getDocumentController = async (
 
     const documentDb = await getDocument(req.userId!, documentHash);
     const status = documentDb ? 200 : 404;
-    res.status(status).send(documentDb);
+    res.status(status).json(documentDb);
   } catch (error) {
     next(error);
   }
@@ -44,7 +44,7 @@ export const setDocumentController = async (
       req.userId!,
       document
     );
-    res.status(200).send(updatedDocument);
+    res.status(200).json(updatedDocument);
   } catch (error) {
     next(error);
   }
