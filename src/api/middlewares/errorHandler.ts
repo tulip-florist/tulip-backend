@@ -11,6 +11,9 @@ export const errorHandler = (
   if (err instanceof CustomError && !err.isInternal) {
     logger.info(err);
     return res.status(err.httpStatusCode).send({ errors: err.serialize() });
+  } else if (err.message === "request entity too large") {
+    logger.info(err);
+    return res.status(413).json({ errors: [{ message: err.message }] });
   }
   logger.error(err);
   res.status(500).send({

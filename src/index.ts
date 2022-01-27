@@ -18,13 +18,13 @@ connectDB();
 
 app.use(helmet());
 app.use(cookieParser());
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
+app.use(express.urlencoded({ extended: true, limit: "300kb" }));
+app.use(express.json({ limit: "300kb" }));
 app.use(httpLogger);
 
 app.use(corsMiddleware);
-app.use("/v1/", indexRouter);
 app.use(mongoSanitize());
+app.use("/v1/", indexRouter);
 app.use(errorHandler);
 
 app.listen(PORT, () => logger.info(`Running on ${PORT}`));
