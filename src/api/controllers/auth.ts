@@ -57,13 +57,13 @@ export const emailLogin = async (
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         expires: inXMinutes(ACCESS_TOKEN_COOKIE_EXPIRATION),
-        sameSite: "lax",
+        sameSite: "strict",
       })
       .cookie(Tokens.REFRESH_TOKEN, session.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         expires: inXMonths(REFRESH_TOKEN_COOKIE_EXPIRATION),
-        sameSite: "lax",
+        sameSite: "strict",
       })
       .sendStatus(200);
   } catch (error) {
@@ -120,13 +120,13 @@ export const token = async (
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         expires: inXMinutes(ACCESS_TOKEN_COOKIE_EXPIRATION),
-        sameSite: "lax",
+        sameSite: "strict",
       })
       .cookie(Tokens.REFRESH_TOKEN, session.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         expires: inXMonths(REFRESH_TOKEN_COOKIE_EXPIRATION),
-        sameSite: "lax",
+        sameSite: "strict",
       })
       .sendStatus(200);
   } catch (error) {
