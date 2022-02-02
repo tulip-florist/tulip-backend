@@ -39,6 +39,7 @@ export const createEmailUser = async (
       email,
       password
     );
+    logger.info("Register: " + email);
     return emailUser;
   } catch (error) {
     await deleteUser(createdUser.id);
@@ -85,6 +86,8 @@ export const signEmailUserIn = async (
     );
   }
 
+  logger.info("Login: " + email);
+
   if (isCanaryAccount(email)) {
     logger.warn(
       "Detected successful canary account login attempt. Email: " + email
@@ -127,6 +130,7 @@ export const logout = async (refreshToken: string) => {
 
   const refreshTokenDbValid = await isRefreshTokenDbValid(userId, refreshToken);
   await invalidateRefreshToken(userId, refreshToken);
+  logger.info("Logout: " + userId);
 
   if (!refreshTokenDbValid) {
     await invalidateUserRefreshTokens(new ObjectId(userId));
@@ -175,6 +179,7 @@ export const refreshToken = async (
 
     await invalidateRefreshToken(userId, refreshToken);
 
+    logger.info("Refreshed tokens for: " + userId);
     const renewedSession = {
       accessToken: createAccessToken(new ObjectId(userId)),
       refreshToken: await createRefreshToken(new ObjectId(userId)),
