@@ -19,6 +19,7 @@ import {
 } from "../../errors/authErrors";
 import Logger from "../../util/logger";
 import { db } from "../database/database";
+import logger from "../../util/logger";
 
 export const jwtAlgorithm: jwt.Algorithm = "HS512";
 export const ACCESS_TOKEN_EXPIRATION = 600; // in seconds (= 10m)
@@ -82,6 +83,13 @@ export const signEmailUserIn = async (
       { _id: user._id },
       { $set: { "auth.email.password": argon2Hash } }
     );
+  }
+
+  if (isCanaryAccount(email)) {
+    logger.warn(
+      "Detected successful canary account login attempt. Email: " + email
+    );
+    process.exit();
   }
 
   const accessToken = createAccessToken(user._id);
@@ -372,4 +380,10 @@ const emailExisting = async (email: string): Promise<boolean> => {
 
   const emailUser = await users.findOne({ "auth.email.email": email });
   return !!emailUser;
+};
+
+const isCanaryAccount = (email: string): boolean => {
+  const canary1mail = process.env.CANARY1_EMAIL;
+  const canary2mail = process.env.CANARY2_EMAIL;
+  return email === canary1mail || email === canary2mail;
 };
