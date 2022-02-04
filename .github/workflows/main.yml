@@ -6,8 +6,40 @@ on:
 
   workflow_dispatch:
 jobs:
+  test:
+    name: Run tests
+    runs-on: ubuntu-latest
+    env:
+      PORT: 8080
+      JWT_SECRET: ${{ secrets.JWT_TESTING_SECRET }}
+      LOG_LEVEL_FILE: info
+      LOG_LEVEL_CONSOLE: debug
+      SENTRY_DNS: ${{ secrets.SENTRY_DNS }}
+      CANARY1_EMAIL: ${{ secrets.CANARY1_EMAIL }}
+      CANARY2_EMAIL: ${{ secrets.CANARY2_EMAIL }}
+
+    strategy:
+      matrix:
+        node-version: [14.x]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Npm CI
+        run: |
+          npm ci
+
+      - name: Npm Test
+        run: |
+          npm run test
+
   build:
     runs-on: ubuntu-latest
+    needs: test
     steps:
       - name: Check Out Repo
         uses: actions/checkout@v2

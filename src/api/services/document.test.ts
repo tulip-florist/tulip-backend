@@ -72,7 +72,7 @@ describe("getDocument", () => {
   });
 
   test("doesn't return document(same hash) from different user", async () => {
-    const doc = await getDocument(user2?.id.toString()!, doc1.documentHash);
+    const doc = await getDocument(user1?.id.toString()!, doc1.documentHash);
     expect(doc).toEqual(doc1);
   });
 });
