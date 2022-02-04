@@ -100,7 +100,7 @@ export const signEmailUserIn = async (
   const session: Session = {
     accessToken,
     refreshToken,
-    userId: user._id,
+    userId: user._id.toString(),
   };
   return session;
 };
@@ -240,7 +240,7 @@ const createRefreshToken = async (
     expiresIn,
   });
 
-  const refreshTokenDb: RefreshTokenDB = {
+  const refreshTokenDb: Omit<RefreshTokenDB, "_id"> = {
     userId: userId,
     refreshToken,
     valid: true,

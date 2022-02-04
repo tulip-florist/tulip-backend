@@ -9,7 +9,7 @@
     "serve": "cross-env NODE_ENV=development concurrently \"tsc --watch\" \"nodemon -q dist/index.js\"",
     "prestart": "npm run build",
     "start": "cross-env NODE_ENV=production node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest --forceExit"
   },
   "repository": {
     "type": "git",
@@ -49,14 +49,19 @@
     "winston-sentry-log": "^1.0.24"
   },
   "devDependencies": {
+    "@shelf/jest-mongodb": "^2.2.0",
     "@types/bcrypt": "^5.0.0",
     "@types/cookie-parser": "^1.4.2",
+    "@types/jest": "^27.4.0",
     "@types/jsonwebtoken": "^8.5.5",
     "@types/lodash": "^4.14.178",
     "@types/morgan": "^1.9.3",
     "@types/morgan-json": "^1.1.0",
     "@types/validator": "^13.7.1",
     "concurrently": "^6.3.0",
-    "nodemon": "^2.0.14"
+    "jest": "^27.4.7",
+    "mongodb-memory-server": "^8.2.0",
+    "nodemon": "^2.0.14",
+    "ts-jest": "^27.1.3"
   }
 }

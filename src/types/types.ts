@@ -1,4 +1,4 @@
-import { ObjectId, Document as MongoDoc } from "mongodb";
+import { ObjectId, Document as MongoDoc, WithId } from "mongodb";
 import { Request } from "express";
 import { JwtPayload } from "jsonwebtoken";
 
@@ -19,7 +19,7 @@ interface EmailAuth {
   password: string;
 }
 
-export interface Document {
+export interface Document extends WithId<MongoDoc> {
   id: ObjectId;
   userId: ObjectId;
   documentHash: string;
@@ -52,7 +52,7 @@ export enum Tokens {
   REFRESH_TOKEN = "refresh_token",
 }
 
-export interface RefreshTokenDB extends MongoDoc {
+export interface RefreshTokenDB extends WithId<MongoDoc> {
   userId: ObjectId;
   refreshToken: string;
   valid: boolean;

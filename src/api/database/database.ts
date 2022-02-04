@@ -10,14 +10,15 @@ export let db: Db;
 
 export const connectDB = async () => {
   try {
-    MongoClient.connect(uri, { retryWrites: true }, (err, client) => {
-      if (err) {
-        throw err;
-      }
-      if (client) {
-        db = client.db(db_name);
-      }
-    });
+    if (process.env.NODE_ENV !== "test") {
+      const connection = await MongoClient.connect(uri);
+      db = connection.db(db_name);
+    } else {
+      const connection = await MongoClient.connect(
+        process.env.MONGO_TESTING_URI!
+      );
+      db = connection.db();
+    }
   } catch (error) {
     logger.warn(error);
   }
