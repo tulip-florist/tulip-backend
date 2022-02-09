@@ -1,10 +1,10 @@
 import express from "express";
 import {
-  emailLogin,
-  emailRegister,
-  me,
-  logOut,
-  token,
+  emailLoginController,
+  emailRegisterController,
+  meController,
+  logOutController,
+  tokenController,
 } from "../controllers/auth";
 import { authenticate } from "../middlewares/authJWT";
 import {
@@ -13,10 +13,10 @@ import {
 } from "../middlewares/rateLimit";
 const authRouter = express.Router();
 
-authRouter.post("/emailRegister", authApiLimiter, emailRegister);
-authRouter.post("/emailLogin", authApiLimiter, emailLogin);
-authRouter.get("/me", authenticate, me);
-authRouter.post("/token", refreshTokenApiLimiter, token);
-authRouter.post("/logout", logOut);
+authRouter.post("/emailRegister", authApiLimiter, emailRegisterController);
+authRouter.post("/emailLogin", authApiLimiter, emailLoginController);
+authRouter.get("/me", authenticate, meController);
+authRouter.post("/token", refreshTokenApiLimiter, tokenController);
+authRouter.post("/logout", logOutController);
 
 export default authRouter;

@@ -16,7 +16,7 @@ import { CustomError } from "../../errors/CustomError";
 const ACCESS_TOKEN_COOKIE_EXPIRATION = ACCESS_TOKEN_EXPIRATION / 60; // minutes
 const REFRESH_TOKEN_COOKIE_EXPIRATION = 6; // months
 
-export const emailRegister = async (
+export const emailRegisterController = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -38,7 +38,7 @@ export const emailRegister = async (
   }
 };
 
-export const emailLogin = async (
+export const emailLoginController = async (
   req: Request,
   res: Response,
   next: NextFunction
@@ -72,7 +72,7 @@ export const emailLogin = async (
 };
 
 // Retrieve user information about the current user
-export const me = async (
+export const meController = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -87,7 +87,7 @@ export const me = async (
   }
 };
 
-export const logOut = async (
+export const logOutController = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
@@ -104,7 +104,7 @@ export const logOut = async (
   }
 };
 
-export const token = async (
+export const tokenController = async (
   req: AuthRequest,
   res: Response,
   next: NextFunction
