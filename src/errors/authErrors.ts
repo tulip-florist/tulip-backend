@@ -43,7 +43,7 @@ export class RefreshTokenReusedError extends CustomError {
   }
 }
 
-export class emailAlreadyUsedError extends CustomError {
+export class EmailAlreadyUsedError extends CustomError {
   constructor() {
     super("Email already registered", 409, false);
   }

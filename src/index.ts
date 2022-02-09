@@ -9,7 +9,7 @@ import { corsMiddleware } from "./api/middlewares/cors";
 import { CustomError } from "./errors/CustomError";
 import { errorHandler } from "./api/middlewares/errorHandler";
 import { connectDB } from "./api/database/database";
-const mongoSanitize = require("express-mongo-sanitize");
+import mongoSanitize from "express-mongo-sanitize";
 
 const PORT = process.env.PORT || 8080;
 const app: Express = express();

@@ -11,7 +11,7 @@ import jwt from "jsonwebtoken";
 import { CustomError } from "../../errors/CustomError";
 import { inXMinutes } from "../../util/datesHelper";
 import {
-  emailAlreadyUsedError,
+  EmailAlreadyUsedError,
   InvalidLoginCredentials,
   RefreshTokenExpiredError,
   RefreshTokenInvalidError,
@@ -30,7 +30,7 @@ export const createEmailUser = async (
   password: string
 ): Promise<User | null> => {
   const emailExists = await emailExisting(email);
-  if (emailExists) throw new emailAlreadyUsedError();
+  if (emailExists) throw new EmailAlreadyUsedError();
 
   const createdUser = await createUser();
   try {
@@ -39,6 +39,7 @@ export const createEmailUser = async (
       email,
       password
     );
+
     logger.info("Register: " + email);
     return emailUser;
   } catch (error) {
