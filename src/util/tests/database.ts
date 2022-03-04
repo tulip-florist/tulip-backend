@@ -1,9 +1,9 @@
 import { MongoMemoryServer } from "mongodb-memory-server";
 import { Db, MongoClient } from "mongodb";
 
-export let connection: MongoClient;
-export let mongoServer: MongoMemoryServer;
-export let testDb: Db;
+let connection: MongoClient;
+let mongoServer: MongoMemoryServer;
+let testDb: Db;
 
 export const setupTestDb = async () => {
   mongoServer = await MongoMemoryServer.create();

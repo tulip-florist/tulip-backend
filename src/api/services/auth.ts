@@ -336,38 +336,29 @@ const linkUserEmailAuth = async (
   password: string
 ): Promise<User> => {
   const users = db.collection("users");
+  const user: User = {
+    id: userId,
+    auth: {
+      email: {
+        email,
+        password: await argon2.hash(password),
+      },
+    },
+  };
 
   try {
-    const user: User = {
-      id: userId,
-      auth: {
-        email: {
-          email,
-          password: await argon2.hash(password),
-        },
-      },
-    };
-
     const updateResult = await users.updateOne(
       { _id: userId },
       { $set: { auth: user.auth } }
     );
-
-    if (updateResult.modifiedCount !== 1) {
-      throw new CustomError(
-        "Could not link user to emailAuth",
-        undefined,
-        true,
-        {
-          userId,
-        }
-      );
-    }
-
-    return user;
-  } catch (err) {
-    throw new CustomError("Couldn't hash password");
+    if (updateResult.modifiedCount !== 1) throw new Error();
+  } catch (error) {
+    throw new CustomError("Could not link user to emailAuth", undefined, true, {
+      userId,
+    });
   }
+
+  return user;
 };
 
 const deleteUser = async (userId: ObjectId) => {

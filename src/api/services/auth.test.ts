@@ -4,8 +4,8 @@ import { clearTestDb } from "../../util/tests/database";
 import { createEmailUser } from "./auth";
 
 describe("createEmailUser", () => {
-  beforeAll(() => {
-    clearTestDb;
+  beforeAll(async () => {
+    await clearTestDb();
   });
 
   test("creates correct user", async () => {
